@@ -6,13 +6,13 @@ class LimitSizeStream extends stream.Transform {
     super(options);
 
     this.limit = options.limit;
-    this.store = Buffer.from([]);
+    this.length = 0;
   }
 
   _transform(chunk, encoding, callback) {
-    this.store = Buffer.concat([this.store, chunk]);
+    this.length += chunk.length;
 
-    if (this.store.length > this.limit) {
+    if (this.length > this.limit) {
       this.emit('error', new LimitExceededError());
       return;
     }
