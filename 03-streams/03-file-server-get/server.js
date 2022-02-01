@@ -1,10 +1,11 @@
 const url = require('url');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 
 const server = new http.Server();
 
-server.on('request', (req, res) => {
+server.on('request', async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname.slice(1);
 
@@ -12,6 +13,29 @@ server.on('request', (req, res) => {
 
   switch (req.method) {
     case 'GET':
+      if (pathname.includes('/')) {
+        res.statusCode = 400;
+        res.end('Paths with folders are not supported');
+        return;
+      }
+
+      const stream = fs.createReadStream(filepath);
+
+      stream.pipe(res);
+
+      stream.on('error', (error) => {
+        if (error.code === 'ENOENT') {
+          res.statusCode = 404;
+          res.end('Not found');
+        } else {
+          res.statusCode = 500;
+          res.end('Server error');
+        }
+      });
+
+      req.on('aborted', () => {
+        stream.destroy();
+      });
 
       break;
 
